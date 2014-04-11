@@ -1,6 +1,7 @@
 #pragma once;
 #include <string>
 #include <set>
+#include <vector>
 
 class Board{
 
@@ -13,18 +14,34 @@ private:
 	std::set<int> setVer[9];
 	std::set<int> setBox[9];
 
+	vector<Trekk> trekkVec;
+
+	int moveCount;
 
 public:
 
 	void printBoard();
-	Board(string filnavn); //c++ forstår ikke string elno
+	Board(std::string filnavn); //c++ forstår ikke string elno
 	~Board();
 
 	void makeSets(); 
-	void write(string filnavn); //den forstår ikke
+	void write(std::string filnavn); //den forstår ikke
 
 	int getBoxCoordinates(int hor, int ver);
 
 	void setValue(int, int, int);
 
+	std::set<int > possibleValues(int, int);
+
+	bool possiblePlacement(int, int, int);
+
+	void makeMove();
 };
+
+struct Trekk{
+	int x;
+	int y;
+	int value;
+};
+
+

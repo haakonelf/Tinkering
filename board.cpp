@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
+//#include <vector> brukes ikke lenger
 using namespace std;
 
 void Board::printBoard(){
@@ -72,13 +72,16 @@ Board::Board(string filnavn){ //c++ finner ikke denne funksjonen her?
 	int avsnitt = 0;
 	while (getline(inFile, line)){
 		for (int i = 0; i < 9; i++){
-			board[avsnitt][i] = line[i];
+			/*board[avsnitt][i] = line[i];*/
+			setValue(avsnitt, i, line[i]);//dat new implementation
+
 		}
 		avsnitt++;
 	}
 	inFile.close(); //var det alt?
 
 	makeSets();
+	moveCount = 0;
 
 	cout << "\t\tBoard Initialized";
 }
@@ -88,7 +91,14 @@ Board::~Board(){
 	delete[]board;
 	//board = nullptr; //dette liker den ikke? lol
 
-	//slett vector!!
+	//slett set!!
+	delete[]setHor;
+	delete[]setVer;
+	delete[]setBox;
+
+	//setHor[] = nullptr; nei det liker den ikke
+
+	//men redudant uansett så lol
 
 }
 
@@ -97,7 +107,7 @@ void Board::write(string filnavn){
 	outFile.open(filnavn);
 
 	if (outFile.fail()){
-		cerr << "Error creating file";
+		cerr << "\t\tError creating file";
 		exit(1);
 	}
 	
@@ -113,48 +123,110 @@ void Board::write(string filnavn){
 
 int Board::getBoxCoordinates(int hor, int ver){
 	//kan dette forenkles?
-	//kan jeg lage if - for setning elno?
-	if (hor < 4 && ver < 4){
-		return 1;
-	}
-	else if (hor < 7 && ver < 4){
-		return 2;
-	}
-	else if (hor < 10 && ver < 4){
-		return 3;
-	}
-	else if (hor < 4 && ver < 7){ //forstørrer området sakte men sikkert, og trnger derfor ikke flere if'z
-		return 4;
-	}
-	else if (hor < 7 && ver < 7){
-		return 5;
-	}
-	else if (hor < 10 && ver < 7){
-		return 6;
-	}
-	else if (hor < 4 && ver < 10){
-		return 7;
-	}
-	else if (hor < 7 && ver < 10){
-		return 8;
-	}
-	else if (hor < 10 && ver < 10){
-		return 9;
-	}
-	else{
-		cerr << "\t\tUgyldig plassering";
-	}
+	//kan jeg lage if - for setning elno? det hadde jo v'rt best, men da må jeg  kode variabelnavn, som kanskej ikke funker
+	
+	
+	return (hor - 1) / 3 + 3 * ((ver - 1) / 3);
+	
+	
+	//
+	//if (hor < 4 && ver < 4){
+	//	return 0;
+	//}
+	//else if (hor < 7 && ver < 4){
+	//	return 1;
+	//}
+	//else if (hor < 10 && ver < 4){
+	//	return 2;
+	//}
+	//else if (hor < 4 && ver < 7){ //forstørrer området sakte men sikkert, og trnger derfor ikke flere if'z
+	//	return 3;
+	//}
+	//else if (hor < 7 && ver < 7){
+	//	return 4;
+	//}
+	//else if (hor < 10 && ver < 7){
+	//	return 5;
+	//}
+	//else if (hor < 4 && ver < 10){
+	//	return 6;
+	//}
+	//else if (hor < 7 && ver < 10){
+	//	return 7;
+	//}
+	//else if (hor < 10 && ver < 10){
+	//	return 8;
+	//}
+	//else{
+	//	cerr << "\t\tUgyldig plassering";
+	//}
 }
 
 
 void Board::setValue(int hor, int ver, int value){
 	board[hor][ver] = value; 
 
-	setHor(hor).remove(value);
-	setVer(ver).remove(value);
-	setBox(getBoxCoordinates(hor, ver)).remove(value);
+	setHor[hor].erase(value);
+	setVer[ver].erase(value);
+	setBox[getBoxCoordinates(hor, ver)].erase(value);
 
 }
 
+set<int > Board::possibleValues(int hor, int ver){ 
+
+	set<int > rute = setHor[hor]; //funker dette for hvert element i setHor[hor]?
+
+	//tar utgangspunkt i sethor
+	for (auto it = (setHor[hor]).begin(); it != setHor[hor].end(); it++){ 
+		//om den ikke finnes i enten ver eller box slettes den fra hor
+		if (setVer[ver].find(*it) == setVer[ver].end() || setBox[getBoxCoordinates(hor, ver)].find(*it) == setBox[getBoxCoordinates(hor, ver)].end()){
+			rute.erase(*it);
+		}
+	}
+	return rute;
+}
 
 
+bool Board::possiblePlacement(int hor, int ver, int value){
+	//er den lik end finnes den ikke
+	if (possibleValues(hor, ver).find(value) != possibleValues(hor, ver).end()){
+		return false;
+	}
+	return true;
+}
+
+void Board::makeMove(){
+	int moveCount = 0;
+
+	int hor, ver, value = 0;
+	bool play = true;
+	string action;
+	while (play){
+		cout << "Please enter horizontal coordinate: ";
+		cin >> hor;
+		cout << "Please enter vertical coordinate: ";
+		cin >> ver;
+		cout << "Please enter value";
+		cin >> value;
+
+		if (hor == 0 || ver == 0 || value == 0){ //gjør det heller sånn enn å spørre brukeren, blir "" det samme som uendret??
+			cout << "Action menu, to skip back steps write back, for swag type swag\n Action: ";
+			cin>>action
+			play = false;
+
+		}
+		else{
+			setValue(hor, ver, value);
+			
+			Trekk datMove;
+			datMove.x = hor;
+			datMove.y = ver;
+			datMove.value = value;
+
+			trekkVec.push_back(datMove);
+
+		}
+	}
+
+
+}
